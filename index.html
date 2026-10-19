@@ -353,7 +353,11 @@ function deobfuscate(code) {
   return result;
 }
 
-const REVOKE_URL = 'https://cdn.jsdelivr.net/gh/shuziqiu/shuziqiu@main/revoked.json';
+const REVOKE_URLS = [
+  'https://shuziqiu.github.io/shuziqiu/revoked.json',
+  'https://cdn.jsdelivr.net/gh/shuziqiu/shuziqiu@main/revoked.json',
+  'https://raw.githubusercontent.com/shuziqiu/shuziqiu/main/revoked.json'
+];
 
 function checkKey(input) {
   const code = input.trim();
@@ -402,19 +406,25 @@ async function unlock() {
     err.style.display = 'block';
     return;
   }
-  // 联网查询作废名单（有 ID 的码才查）
+  // 联网查询作废名单（有 ID 的码才查，多源依次尝试）
   if (r.id) {
     if (unlockBtn) { unlockBtn.textContent = '验证中…'; unlockBtn.disabled = true; }
-    let revoked = false, checkFailed = false;
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 8000);
-    try {
-      const resp = await fetch(REVOKE_URL + '?t=' + Date.now(), { signal: ctrl.signal, cache: 'no-store' });
-      const list = await resp.json();
-      revoked = Array.isArray(list) && list.includes(r.id);
-    } catch (e) {
-      checkFailed = true;
-    } finally {
+    let revoked = false, anySuccess = false;
+    for (const url of REVOKE_URLS) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 5000);
+      try {
+        const resp = await fetch(url + '?t=' + Date.now(), { signal: ctrl.signal, cache: 'no-store' });
+        const list = await resp.json();
+        if (Array.isArray(list)) {
+          anySuccess = true;
+          if (list.includes(r.id)) {
+            revoked = true;
+            clearTimeout(timer);
+            break;
+          }
+        }
+      } catch (e) {}
       clearTimeout(timer);
     }
     if (unlockBtn) { unlockBtn.textContent = '解 锁'; unlockBtn.disabled = false; }
@@ -423,7 +433,7 @@ async function unlock() {
       err.style.display = 'block';
       return;
     }
-    if (checkFailed) {
+    if (!anySuccess) {
       err.textContent = '无法验证时效码状态，请检查网络后重试';
       err.style.display = 'block';
       return;
