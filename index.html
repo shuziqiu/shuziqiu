@@ -178,16 +178,88 @@ body {
   margin: 4px 0 8px;
 }
 .exclude-box {
-  max-height: 82vh;
+  max-height: 86vh;
   overflow-y: auto;
 }
-.exclude-zone {
+.exclude-topbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 8px;
 }
+.exclude-topbar h2 {
+  color: #f1c40f;
+  font-size: 17px;
+  margin: 0;
+}
+.exclude-topbtns {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.exclude-topbtns .lock-close {
+  position: static;
+  transform: none;
+}
+.exclude-gen-top {
+  padding: 6px 14px;
+  background: #27ae60;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.exclude-gen-top:hover {
+  background: #2ecc71;
+}
+.exclude-list {
+  max-height: 58vh;
+  overflow-y: auto;
+  padding: 2px;
+}
+.exclude-zone {
+  margin-bottom: 10px;
+}
 .exclude-zone-label {
-  font-size: 10px;
+  font-size: 12px;
   color: #888;
   margin-bottom: 4px;
+  padding-left: 2px;
+}
+.exclude-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 9px 14px;
+  margin: 3px 0;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.exclude-row.blue {
+  background: rgba(52,152,219,0.18);
+  border-color: rgba(52,152,219,0.35);
+}
+.exclude-row.excluded {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.07);
+  color: #555;
+  font-weight: normal;
+}
+.exclude-row .er-num {
+  width: 30px;
 }
 .num-wrap {
   display: flex;
@@ -433,16 +505,26 @@ footer {
 
 <div class="lock-overlay" id="excludeOverlay">
   <div class="lock-box exclude-box">
-    <button class="lock-close" onclick="closeExclude()" aria-label="关闭">×</button>
-    <h2>手动排除法</h2>
     <div id="excludeSelectView">
+      <div class="exclude-topbar">
+        <h2>手动排除法</h2>
+        <div class="exclude-topbtns">
+          <button class="exclude-gen-top" onclick="excludeGenerate()">生成号码</button>
+          <button class="lock-close" onclick="closeExclude()" aria-label="关闭">×</button>
+        </div>
+      </div>
       <div class="lock-sub">点击数字排除，再次点击恢复</div>
-      <div class="exclude-grid" id="excludeGridModal"></div>
+      <div class="exclude-list" id="excludeGridModal"></div>
       <div class="exclude-stats" id="excludeStats"></div>
       <div class="exclude-err" id="excludeErr"></div>
-      <button class="exclude-gen-btn" onclick="excludeGenerate()">从剩余号码生成5组</button>
     </div>
     <div id="excludeResultView" style="display:none;">
+      <div class="exclude-topbar">
+        <h2>手动排除法</h2>
+        <div class="exclude-topbtns">
+          <button class="lock-close" onclick="closeExclude()" aria-label="关闭">×</button>
+        </div>
+      </div>
       <div class="exclude-result" id="excludeResultModal"></div>
       <div style="display:flex;gap:10px;margin-top:12px;">
         <button class="exclude-regenerate" onclick="reGenerate()">重新生成</button>
@@ -822,16 +904,16 @@ function renderExcludeGrid() {
     let zoneIdx = 1;
     for (let start = 1; start <= cfg.redMax; start += 11) {
       const end = Math.min(start + 10, cfg.redMax);
-      zones.push({ label: `${cnNum(zoneIdx)}区(${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')})：`, nums: rangeFromTo(start, end), zone: 'red' });
+      zones.push({ label: `${cnNum(zoneIdx)}区(${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')})`, nums: rangeFromTo(start, end), zone: 'red' });
       zoneIdx++;
     }
-    zones.push({ label: `蓝球(01-${String(cfg.blueMax).padStart(2,'0')})：`, nums: rangeFromTo(1, cfg.blueMax), zone: 'blue' });
+    zones.push({ label: `蓝球(01-${String(cfg.blueMax).padStart(2,'0')})`, nums: rangeFromTo(1, cfg.blueMax), zone: 'blue' });
   } else if (cfg.type === 'single') {
     const step = 11;
     let zoneIdx = 1;
     for (let start = 1; start <= cfg.redMax; start += step) {
       const end = Math.min(start + step - 1, cfg.redMax);
-      zones.push({ label: `${cnNum(zoneIdx)}区(${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')})：`, nums: rangeFromTo(start, end), zone: 'red' });
+      zones.push({ label: `${cnNum(zoneIdx)}区(${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')})`, nums: rangeFromTo(start, end), zone: 'red' });
       zoneIdx++;
     }
   } else if (cfg.type === 'digit7' || cfg.type === 'digit3' || cfg.type === 'digit5') {
@@ -846,21 +928,19 @@ function renderExcludeGrid() {
     zdiv.className = 'exclude-zone';
     const lab = document.createElement('div');
     lab.className = 'exclude-zone-label';
-    lab.textContent = z.label;
+    lab.dataset.base = z.label;
+    lab.textContent = z.label + '：0';
     zdiv.appendChild(lab);
-    const wrap = document.createElement('div');
-    wrap.className = 'num-wrap';
     z.nums.forEach(n => {
       const b = document.createElement('button');
-      b.className = 'num-btn' + (z.zone === 'blue' ? ' blue' : '');
+      b.className = 'exclude-row' + (z.zone === 'blue' ? ' blue' : '');
       b.type = 'button';
       b.dataset.zone = z.zone;
       b.dataset.num = n;
-      b.textContent = String(n).padStart(2, '0');
+      b.innerHTML = `<span class="er-num">${String(n).padStart(2, '0')}</span>`;
       b.onclick = () => { b.classList.toggle('excluded'); updateExcludeStats(); };
-      wrap.appendChild(b);
+      zdiv.appendChild(b);
     });
-    zdiv.appendChild(wrap);
     grid.appendChild(zdiv);
   });
 }
@@ -873,15 +953,21 @@ function updateExcludeStats() {
   if (!grid) return;
   const stats = document.getElementById('excludeStats');
   if (!stats) return;
+  grid.querySelectorAll('.exclude-zone').forEach(zdiv => {
+    const lab = zdiv.querySelector('.exclude-zone-label');
+    if (!lab || !lab.dataset.base) return;
+    const cnt = zdiv.querySelectorAll('.exclude-row.excluded').length;
+    lab.textContent = lab.dataset.base + '：' + cnt;
+  });
   if (cfg.type === 'redblue') {
-    const reds = grid.querySelectorAll('.num-btn[data-zone=red].excluded').length;
-    const blues = grid.querySelectorAll('.num-btn[data-zone=blue].excluded').length;
+    const reds = grid.querySelectorAll('.exclude-row[data-zone=red].excluded').length;
+    const blues = grid.querySelectorAll('.exclude-row[data-zone=blue].excluded').length;
     stats.textContent = `已排除${reds}个红球、${blues}个蓝球`;
   } else if (cfg.type === 'single') {
-    const reds = grid.querySelectorAll('.num-btn.excluded').length;
+    const reds = grid.querySelectorAll('.exclude-row.excluded').length;
     stats.textContent = `已排除${reds}个号码`;
   } else {
-    const total = grid.querySelectorAll('.num-btn.excluded').length;
+    const total = grid.querySelectorAll('.exclude-row.excluded').length;
     stats.textContent = `已排除${total}个数字`;
   }
 }
@@ -906,7 +992,7 @@ function excludeGenerate() {
   const err = document.getElementById('excludeErr');
   if (!grid || !result || !err) return;
   const excl = {};
-  grid.querySelectorAll('.num-btn.excluded').forEach(b => {
+  grid.querySelectorAll('.exclude-row.excluded').forEach(b => {
     const z = b.dataset.zone;
     if (!excl[z]) excl[z] = new Set();
     excl[z].add(parseInt(b.dataset.num, 10));
