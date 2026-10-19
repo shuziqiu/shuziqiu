@@ -177,6 +177,10 @@ body {
 .exclude-grid {
   margin: 4px 0 8px;
 }
+.exclude-box {
+  max-height: 82vh;
+  overflow-y: auto;
+}
 .exclude-zone {
   margin-bottom: 8px;
 }
@@ -385,6 +389,17 @@ footer {
     <button onclick="unlock()">解 锁</button>
     <div class="lock-error" id="lockError"></div>
     <div class="lock-tip">时效码由时效码生成器生成，请联系生成者获取<br>每次解锁后请妥善保管，到期后需重新获取</div>
+  </div>
+</div>
+
+<div class="lock-overlay" id="excludeOverlay">
+  <div class="lock-box exclude-box">
+    <button class="lock-close" onclick="closeExclude()" aria-label="关闭">×</button>
+    <h2>手动排除法</h2>
+    <div class="lock-sub">点击数字排除，再次点击恢复</div>
+    <div class="exclude-grid" id="excludeGridModal"></div>
+    <button class="exclude-gen-btn" onclick="excludeGenerate()">从剩余号码生成5组</button>
+    <div class="exclude-result" id="excludeResultModal"></div>
   </div>
 </div>
 
@@ -635,10 +650,9 @@ function showGame(key) {
           <div class="mech-name">${m.name}</div>
           <div class="help-icon">?</div>
         </div>
-        <div class="exclude-grid" id="excludeGrid_${key}"></div>
-        <button class="exclude-gen-btn" onclick="excludeGenerate('${key}')">从剩余号码生成5组</button>
-        <div class="exclude-result" id="excludeResult_${key}"></div>
+        <div class="mech-hint">点击机制名称打开排除选择</div>
       `;
+      card.onclick = () => openExcludeModal(key);
     } else {
       card.innerHTML = `
         <div class="mech-header">
@@ -659,7 +673,6 @@ function showGame(key) {
       };
     }
     mechList.appendChild(card);
-    if (m.exclude) renderExcludeGrid(key);
   });
 }
 
@@ -721,32 +734,52 @@ function rangeFromTo(a, b) {
   return arr;
 }
 
-function renderExcludeGrid(key) {
+let currentExcludeKey = null;
+
+function openExcludeModal(key) {
+  if (!unlocked) {
+    pendingAction = () => openExcludeModal(key);
+    openLock();
+    return;
+  }
+  currentExcludeKey = key;
+  renderExcludeGrid();
+  document.getElementById('excludeResultModal').innerHTML = '';
+  document.getElementById('excludeOverlay').style.display = 'flex';
+}
+
+function closeExclude() {
+  document.getElementById('excludeOverlay').style.display = 'none';
+}
+
+function renderExcludeGrid() {
+  const key = currentExcludeKey;
+  if (!key) return;
   const cfg = GAMES[key];
-  const grid = document.getElementById('excludeGrid_' + key);
+  const grid = document.getElementById('excludeGridModal');
   if (!grid) return;
   grid.innerHTML = '';
   const zones = [];
   if (cfg.type === 'redblue') {
     for (let start = 1; start <= cfg.redMax; start += 11) {
       const end = Math.min(start + 10, cfg.redMax);
-      zones.push({ label: `红球 ${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')}`, nums: rangeFromTo(start, end), zone: 'red' });
+      zones.push({ label: `数字 ${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')}`, nums: rangeFromTo(start, end), zone: 'red' });
     }
     for (let start = 1; start <= cfg.blueMax; start += 8) {
       const end = Math.min(start + 7, cfg.blueMax);
-      zones.push({ label: `蓝球 ${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')}`, nums: rangeFromTo(start, end), zone: 'blue' });
+      zones.push({ label: `数字 ${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')}`, nums: rangeFromTo(start, end), zone: 'blue' });
     }
   } else if (cfg.type === 'single') {
     const step = cfg.redMax > 40 ? 10 : 11;
     for (let start = 1; start <= cfg.redMax; start += step) {
       const end = Math.min(start + step - 1, cfg.redMax);
-      zones.push({ label: `${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')}`, nums: rangeFromTo(start, end), zone: 'red' });
+      zones.push({ label: `数字 ${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')}`, nums: rangeFromTo(start, end), zone: 'red' });
     }
   } else if (cfg.type === 'digit7' || cfg.type === 'digit3' || cfg.type === 'digit5') {
     const len = cfg.type === 'digit7' ? 7 : (cfg.type === 'digit3' ? 3 : 5);
     for (let i = 0; i < len; i++) {
       const max = (cfg.type === 'digit7' && i === 6) ? 14 : 9;
-      zones.push({ label: `第${i + 1}位`, nums: Array.from({length: max + 1}, (_, k) => k), zone: 'd' + i });
+      zones.push({ label: `第${i + 1}位数字`, nums: Array.from({length: max + 1}, (_, k) => k), zone: 'd' + i });
     }
   }
   zones.forEach(z => {
@@ -773,15 +806,12 @@ function renderExcludeGrid(key) {
   });
 }
 
-function excludeGenerate(key) {
-  if (!unlocked) {
-    pendingAction = () => excludeGenerate(key);
-    openLock();
-    return;
-  }
+function excludeGenerate() {
+  const key = currentExcludeKey;
+  if (!key) return;
   const cfg = GAMES[key];
-  const grid = document.getElementById('excludeGrid_' + key);
-  const result = document.getElementById('excludeResult_' + key);
+  const grid = document.getElementById('excludeGridModal');
+  const result = document.getElementById('excludeResultModal');
   if (!grid || !result) return;
   const excl = {};
   grid.querySelectorAll('.num-btn.excluded').forEach(b => {
