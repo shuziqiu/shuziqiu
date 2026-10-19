@@ -213,9 +213,48 @@ body {
   background: rgba(52,152,219,0.25);
 }
 .num-btn.excluded {
-  border: 2px solid #e74c3c;
-  background: rgba(231,76,60,0.15);
-  color: #ff6b6b;
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.1);
+  color: #555;
+}
+.exclude-stats {
+  font-size: 12px;
+  color: #f1c40f;
+  margin: 6px 0;
+  text-align: center;
+}
+.exclude-err {
+  color: #e74c3c;
+  font-size: 12px;
+  text-align: center;
+  padding: 4px 0;
+}
+.exclude-regenerate {
+  flex: 1;
+  padding: 10px;
+  background: #27ae60;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.exclude-regenerate:hover {
+  background: #2ecc71;
+}
+.exclude-back {
+  flex: 1;
+  padding: 10px;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.exclude-back:hover {
+  background: rgba(255,255,255,0.25);
 }
 .exclude-gen-btn {
   width: 100%;
@@ -396,10 +435,20 @@ footer {
   <div class="lock-box exclude-box">
     <button class="lock-close" onclick="closeExclude()" aria-label="关闭">×</button>
     <h2>手动排除法</h2>
-    <div class="lock-sub">点击数字排除，再次点击恢复</div>
-    <div class="exclude-grid" id="excludeGridModal"></div>
-    <button class="exclude-gen-btn" onclick="excludeGenerate()">从剩余号码生成5组</button>
-    <div class="exclude-result" id="excludeResultModal"></div>
+    <div id="excludeSelectView">
+      <div class="lock-sub">点击数字排除，再次点击恢复</div>
+      <div class="exclude-grid" id="excludeGridModal"></div>
+      <div class="exclude-stats" id="excludeStats"></div>
+      <div class="exclude-err" id="excludeErr"></div>
+      <button class="exclude-gen-btn" onclick="excludeGenerate()">从剩余号码生成5组</button>
+    </div>
+    <div id="excludeResultView" style="display:none;">
+      <div class="exclude-result" id="excludeResultModal"></div>
+      <div style="display:flex;gap:10px;margin-top:12px;">
+        <button class="exclude-regenerate" onclick="reGenerate()">重新生成</button>
+        <button class="exclude-back" onclick="backToSelect()">返回重新选号</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -736,6 +785,11 @@ function rangeFromTo(a, b) {
 
 let currentExcludeKey = null;
 
+function cnNum(n) {
+  const cn = ['一','二','三','四','五','六','七','八','九','十'];
+  return cn[n - 1] || n;
+}
+
 function openExcludeModal(key) {
   if (!unlocked) {
     pendingAction = () => openExcludeModal(key);
@@ -745,6 +799,10 @@ function openExcludeModal(key) {
   currentExcludeKey = key;
   renderExcludeGrid();
   document.getElementById('excludeResultModal').innerHTML = '';
+  document.getElementById('excludeErr').textContent = '';
+  document.getElementById('excludeResultView').style.display = 'none';
+  document.getElementById('excludeSelectView').style.display = 'block';
+  updateExcludeStats();
   document.getElementById('excludeOverlay').style.display = 'flex';
 }
 
@@ -761,19 +819,20 @@ function renderExcludeGrid() {
   grid.innerHTML = '';
   const zones = [];
   if (cfg.type === 'redblue') {
+    let zoneIdx = 1;
     for (let start = 1; start <= cfg.redMax; start += 11) {
       const end = Math.min(start + 10, cfg.redMax);
-      zones.push({ label: `数字 ${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')}`, nums: rangeFromTo(start, end), zone: 'red' });
+      zones.push({ label: `${cnNum(zoneIdx)}区(${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')})：`, nums: rangeFromTo(start, end), zone: 'red' });
+      zoneIdx++;
     }
-    for (let start = 1; start <= cfg.blueMax; start += 8) {
-      const end = Math.min(start + 7, cfg.blueMax);
-      zones.push({ label: `数字 ${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')}`, nums: rangeFromTo(start, end), zone: 'blue' });
-    }
+    zones.push({ label: `蓝球(01-${String(cfg.blueMax).padStart(2,'0')})：`, nums: rangeFromTo(1, cfg.blueMax), zone: 'blue' });
   } else if (cfg.type === 'single') {
-    const step = cfg.redMax > 40 ? 10 : 11;
+    const step = 11;
+    let zoneIdx = 1;
     for (let start = 1; start <= cfg.redMax; start += step) {
       const end = Math.min(start + step - 1, cfg.redMax);
-      zones.push({ label: `数字 ${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')}`, nums: rangeFromTo(start, end), zone: 'red' });
+      zones.push({ label: `${cnNum(zoneIdx)}区(${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')})：`, nums: rangeFromTo(start, end), zone: 'red' });
+      zoneIdx++;
     }
   } else if (cfg.type === 'digit7' || cfg.type === 'digit3' || cfg.type === 'digit5') {
     const len = cfg.type === 'digit7' ? 7 : (cfg.type === 'digit3' ? 3 : 5);
@@ -798,12 +857,44 @@ function renderExcludeGrid() {
       b.dataset.zone = z.zone;
       b.dataset.num = n;
       b.textContent = String(n).padStart(2, '0');
-      b.onclick = () => b.classList.toggle('excluded');
+      b.onclick = () => { b.classList.toggle('excluded'); updateExcludeStats(); };
       wrap.appendChild(b);
     });
     zdiv.appendChild(wrap);
     grid.appendChild(zdiv);
   });
+}
+
+function updateExcludeStats() {
+  const key = currentExcludeKey;
+  if (!key) return;
+  const cfg = GAMES[key];
+  const grid = document.getElementById('excludeGridModal');
+  if (!grid) return;
+  const stats = document.getElementById('excludeStats');
+  if (!stats) return;
+  if (cfg.type === 'redblue') {
+    const reds = grid.querySelectorAll('.num-btn[data-zone=red].excluded').length;
+    const blues = grid.querySelectorAll('.num-btn[data-zone=blue].excluded').length;
+    stats.textContent = `已排除${reds}个红球、${blues}个蓝球`;
+  } else if (cfg.type === 'single') {
+    const reds = grid.querySelectorAll('.num-btn.excluded').length;
+    stats.textContent = `已排除${reds}个号码`;
+  } else {
+    const total = grid.querySelectorAll('.num-btn.excluded').length;
+    stats.textContent = `已排除${total}个数字`;
+  }
+}
+
+function backToSelect() {
+  document.getElementById('excludeResultView').style.display = 'none';
+  document.getElementById('excludeSelectView').style.display = 'block';
+  document.getElementById('excludeErr').textContent = '';
+  updateExcludeStats();
+}
+
+function reGenerate() {
+  excludeGenerate();
 }
 
 function excludeGenerate() {
@@ -812,7 +903,8 @@ function excludeGenerate() {
   const cfg = GAMES[key];
   const grid = document.getElementById('excludeGridModal');
   const result = document.getElementById('excludeResultModal');
-  if (!grid || !result) return;
+  const err = document.getElementById('excludeErr');
+  if (!grid || !result || !err) return;
   const excl = {};
   grid.querySelectorAll('.num-btn.excluded').forEach(b => {
     const z = b.dataset.zone;
@@ -826,7 +918,7 @@ function excludeGenerate() {
       const redPool = rangeFromTo(1, cfg.redMax).filter(n => !(excl.red || new Set()).has(n));
       const bluePool = rangeFromTo(1, cfg.blueMax).filter(n => !(excl.blue || new Set()).has(n));
       if (redPool.length < cfg.redPick || bluePool.length < cfg.bluePick) {
-        result.innerHTML = '<div class="exclude-err">剩余号码不足，请取消部分排除</div>';
+        err.textContent = '剩余号码不足，请取消部分排除';
         return;
       }
       const reds = shuffle(redPool).slice(0, cfg.redPick).sort((a,b) => a-b);
@@ -837,7 +929,7 @@ function excludeGenerate() {
     } else if (cfg.type === 'single') {
       const pool = rangeFromTo(1, cfg.redMax).filter(n => !(excl.red || new Set()).has(n));
       if (pool.length < cfg.redPick) {
-        result.innerHTML = '<div class="exclude-err">剩余号码不足，请取消部分排除</div>';
+        err.textContent = '剩余号码不足，请取消部分排除';
         return;
       }
       const nums = shuffle(pool).slice(0, cfg.redPick).sort((a,b) => a-b);
@@ -848,7 +940,7 @@ function excludeGenerate() {
         const max = (cfg.type === 'digit7' && i === 6) ? 14 : 9;
         const pool = rangeFromTo(0, max).filter(n => !(excl['d' + i] || new Set()).has(n));
         if (pool.length === 0) {
-          result.innerHTML = '<div class="exclude-err">第' + (i + 1) + '位数字全部被排除，请取消部分排除</div>';
+          err.textContent = '第' + (i + 1) + '位数字全部被排除，请取消部分排除';
           return;
         }
         const n = pool[Math.floor(Math.random() * pool.length)];
@@ -858,6 +950,9 @@ function excludeGenerate() {
     html += `<div class="exclude-group">${balls}</div>`;
   }
   result.innerHTML = html;
+  err.textContent = '';
+  document.getElementById('excludeSelectView').style.display = 'none';
+  document.getElementById('excludeResultView').style.display = 'block';
 }
 
 function shuffle(arr) {
