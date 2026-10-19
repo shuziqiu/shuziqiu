@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>纯随机数生成器</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #1a1a2e;
+  color: #fff;
+  min-height: 100vh;
+  padding: 16px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+.header {
+  text-align: center;
+  padding: 20px 0;
+}
+.header h1 {
+  color: #f1c40f;
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+.header .sub {
+  color: #888;
+  font-size: 13px;
+}
+.game-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 20px 0;
+}
+.game-card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.game-card:active {
+  transform: scale(0.98);
+  background: rgba(255,255,255,0.08);
+}
+.game-card .name {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+.game-card .range {
+  font-size: 12px;
+  color: #888;
+}
+.back-btn {
+  color: #3498db;
+  cursor: pointer;
+  font-size: 14px;
+  margin-bottom: 16px;
+  display: inline-block;
+}
+.game-page {
+  display: none;
+}
+.game-page.active {
+  display: block;
+}
+.home-page.hidden {
+  display: none;
+}
+.game-title {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+.mechanism-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.mech-card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+}
+.mech-card .mech-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.mech-card .mech-name {
+  font-size: 12px;
+  font-weight: bold;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #f1c40f;
+  color: #000;
+  white-space: nowrap;
+}
+.mech-card .help-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3498db;
+  color: #fff;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.mech-card .mech-params {
+  font-size: 11px;
+  color: #f1c40f;
+  font-weight: bold;
+  line-height: 1.6;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-left: 4px;
+}
+.mech-card .mech-params input {
+  width: 32px;
+  height: 20px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  color: #fff;
+  text-align: center;
+  font-size: 11px;
+  padding: 0 2px;
+}
+.mech-card .mech-params input.wide {
+  width: 48px;
+}
+.mech-card .mech-params .label {
+  color: #f1c40f;
+}
+.mech-card .mech-hint {
+  margin-top: auto;
+  text-align: center;
+  color: #666;
+  font-size: 10px;
+  padding-top: 8px;
+}
+.result-area {
+  margin: 20px 0;
+  padding: 20px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  text-align: center;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ball {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+}
+.ball.red { background: #e74c3c; }
+.ball.blue { background: #3498db; }
+.ball.green { background: #2ecc71; }
+.ball.orange { background: #e67e22; }
+footer {
+  margin-top: 40px;
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  font-size: 12px;
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+
+<div class="home-page" id="homePage">
+  <div class="header">
+    <h1>数字生成器</h1>
+    <div class="sub">纯随机生成 · 无预测功能</div>
+  </div>
+  <div class="game-grid" id="gameGrid"></div>
+</div>
+
+<div class="game-page" id="gamePage">
+  <div class="back-btn" onclick="goHome()">← 返回首页</div>
+  <div class="game-title" id="gameTitle"></div>
+  <div style="text-align:center;color:#888;font-size:14px;margin-bottom:16px;">点击下方任意机制名称即可生成号码</div>
+  <div class="mechanism-list" id="mechList"></div>
+</div>
+
+<footer>
+  <strong>随机数生成器说明</strong><br>
+  本工具为随机数生成器。所有生成的数字均为计算机随机产生，不基于任何历史数据或统计规律，与任何彩票开奖结果不存在因果关系。本工具不提供预测、分析或选号建议，任何选号方法均无法提高中奖概率。用户将生成结果用于任何场景（包括但不限于购买彩票）所产生的后果，均由用户自行承担。本工具与任何彩票发行或销售机构无关联，未授权任何平台或个人以本工具名义收费荐号。<br>
+  <strong style="color:#f1c40f;">建议理性娱乐、量力而行，未成年人禁止使用。</strong>
+</footer>
+
+<script>
+const GAMES = {
+  g1: {
+    name: "33选6 + 16选1",
+    range: "数字1-33选6个，数字1-16选1个",
+    color: "#e74c3c",
+    type: "redblue",
+    redMax: 33, redPick: 6,
+    blueMax: 16, bluePick: 1
+  },
+  g2: {
+    name: "35选5 + 12选2",
+    range: "数字1-35选5个，数字1-12选2个",
+    color: "#e67e22",
+    type: "redblue",
+    redMax: 35, redPick: 5,
+    blueMax: 12, bluePick: 2
+  },
+  g3: {
+    name: "30选7",
+    range: "1-30选7个",
+    color: "#9b59b6",
+    type: "single",
+    redMax: 30, redPick: 7,
+    blueMax: 0, bluePick: 0
+  },
+  g4: {
+    name: "7位数字",
+    range: "前6位各0-9，第7位0-14",
+    color: "#1abc9c",
+    type: "digit7"
+  },
+  g5: {
+    name: "80选10",
+    range: "1-80选10个",
+    color: "#3498db",
+    type: "single",
+    redMax: 80, redPick: 10,
+    blueMax: 0, bluePick: 0
+  },
+  g6: {
+    name: "3位数字",
+    range: "每位0-9各选1个",
+    color: "#e74c3c",
+    type: "digit3"
+  },
+  g7: {
+    name: "3位数字",
+    range: "每位0-9各选1个",
+    color: "#e67e22",
+    type: "digit3"
+  },
+  g8: {
+    name: "5位数字",
+    range: "每位0-9各选1个",
+    color: "#e67e22",
+    type: "digit5"
+  }
+};
+
+const MECHANISMS = [
+  { 
+    name: "完全随机", 
+    paramsHtml: '<input type="number" value="1" min="0"> <span class="label">热</span> <input type="number" value="3" min="0"> <span class="label">温</span> <input type="number" value="2" min="0"> <span class="label">冷</span>'
+  },
+  { 
+    name: "分组随机", 
+    paramsHtml: '<input type="number" value="2" min="0"> <span class="label">一区</span> <input type="number" value="2" min="0"> <span class="label">二区</span> <input type="number" value="2" min="0"> <span class="label">三区</span>'
+  },
+  { 
+    name: "奇偶随机", 
+    paramsHtml: '<input type="number" value="3" min="0"> <span class="label">奇</span> <input type="number" value="3" min="0"> <span class="label">偶</span>'
+  },
+  { 
+    name: "区间随机", 
+    paramsHtml: '<input type="number" value="90" min="0" class="wide"> <span class="label">-</span> <input type="number" value="130" min="0" class="wide"> <span class="label">和值</span>'
+  },
+  { name: "排除生成", paramsHtml: '' },
+  { name: "手动排除法", paramsHtml: '' }
+];
+
+function renderHome() {
+  const grid = document.getElementById('gameGrid');
+  grid.innerHTML = '';
+  for (const [key, cfg] of Object.entries(GAMES)) {
+    const card = document.createElement('div');
+    card.className = 'game-card';
+    card.innerHTML = `
+      <div class="name" style="color:${cfg.color}">${cfg.name}</div>
+      <div class="range">${cfg.range}</div>
+    `;
+    card.onclick = () => showGame(key);
+    grid.appendChild(card);
+  }
+}
+
+function showGame(key) {
+  const cfg = GAMES[key];
+  document.getElementById('homePage').classList.add('hidden');
+  document.getElementById('gamePage').classList.add('active');
+  document.getElementById('gameTitle').textContent = cfg.name;
+  document.getElementById('gameTitle').style.color = cfg.color;
+  
+  const mechList = document.getElementById('mechList');
+  mechList.innerHTML = '';
+  MECHANISMS.forEach((m, idx) => {
+    const card = document.createElement('div');
+    card.className = 'mech-card';
+    card.innerHTML = `
+      <div class="mech-header">
+        <div class="mech-name">${m.name}</div>
+        <div class="help-icon">?</div>
+        <div class="mech-params">${m.paramsHtml}</div>
+      </div>
+      <div class="mech-hint">点击机制名称生成 5 组号码</div>
+    `;
+    card.onclick = (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      generateNumber(key, idx, card);
+    };
+    mechList.appendChild(card);
+  });
+}
+
+function generateNumber(key, mechIdx, cardEl) {
+  const cfg = GAMES[key];
+  let html = '';
+  for (let group = 0; group < 5; group++) {
+    html += `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;flex-wrap:nowrap;">`;
+
+    if (cfg.type === 'redblue') {
+      const redPool = Array.from({length: cfg.redMax}, (_, i) => i + 1);
+      const reds = shuffle(redPool).slice(0, cfg.redPick).sort((a,b) => a-b);
+      reds.forEach(n => {
+        html += `<span class="ball red" style="width:28px;height:28px;font-size:12px;">${String(n).padStart(2,'0')}</span>`;
+      });
+      html += `<span style="color:#888;margin:0 4px;font-size:14px;">+</span>`;
+      if (cfg.bluePick > 0) {
+        const bluePool = Array.from({length: cfg.blueMax}, (_, i) => i + 1);
+        const blues = shuffle(bluePool).slice(0, cfg.bluePick).sort((a,b) => a-b);
+        blues.forEach(n => {
+          html += `<span class="ball blue" style="width:28px;height:28px;font-size:12px;">${String(n).padStart(2,'0')}</span>`;
+        });
+      }
+    } else if (cfg.type === 'single') {
+      const pool = Array.from({length: cfg.redMax}, (_, i) => i + 1);
+      const nums = shuffle(pool).slice(0, cfg.redPick).sort((a,b) => a-b);
+      nums.forEach(n => {
+        html += `<span class="ball green" style="width:28px;height:28px;font-size:12px;">${String(n).padStart(2,'0')}</span>`;
+      });
+    } else if (cfg.type === 'digit3' || cfg.type === 'digit5') {
+      const len = cfg.type === 'digit3' ? 3 : 5;
+      for (let i = 0; i < len; i++) {
+        const n = Math.floor(Math.random() * 10);
+        html += `<span class="ball orange" style="width:28px;height:28px;font-size:12px;">${n}</span>`;
+      }
+    } else if (cfg.type === 'digit7') {
+      for (let i = 0; i < 6; i++) {
+        const n = Math.floor(Math.random() * 10);
+        html += `<span class="ball orange" style="width:28px;height:28px;font-size:12px;">${n}</span>`;
+      }
+      const last = Math.floor(Math.random() * 15);
+      html += `<span class="ball blue" style="width:28px;height:28px;font-size:12px;">${String(last).padStart(2,'0')}</span>`;
+    }
+
+    html += `</div>`;
+  }
+  const headerHtml = cardEl.querySelector('.mech-header').outerHTML;
+  cardEl.innerHTML = headerHtml + `<div style="margin-top:12px;">${html}</div>`;
+}
+
+function goHome() {
+  document.getElementById('homePage').classList.remove('hidden');
+  document.getElementById('gamePage').classList.remove('active');
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generateNumber(key, mechIdx, cardEl) {
+  const cfg = GAMES[key];
+  let html = '';
+
+  // 一次生成5组
+  for (let group = 0; group < 5; group++) {
+    html += `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;gap:6px;flex-wrap:wrap;align-items:center;">`;
+
+    if (cfg.type === 'redblue') {
+      const redPool = Array.from({length: cfg.redMax}, (_, i) => i + 1);
+      const reds = shuffle(redPool).slice(0, cfg.redPick).sort((a,b) => a-b);
+      reds.forEach(n => {
+        html += `<span class="ball red" style="width:24px;height:24px;font-size:11px;">${String(n).padStart(2,'0')}</span>`;
+      });
+      html += `<span style="color:#888;margin:0 4px;">+</span>`;
+      if (cfg.bluePick > 0) {
+        const bluePool = Array.from({length: cfg.blueMax}, (_, i) => i + 1);
+        const blues = shuffle(bluePool).slice(0, cfg.bluePick).sort((a,b) => a-b);
+        blues.forEach(n => {
+          html += `<span class="ball blue" style="width:24px;height:24px;font-size:11px;">${String(n).padStart(2,'0')}</span>`;
+        });
+      }
+    } else if (cfg.type === 'single') {
+      const pool = Array.from({length: cfg.redMax}, (_, i) => i + 1);
+      const nums = shuffle(pool).slice(0, cfg.redPick).sort((a,b) => a-b);
+      nums.forEach(n => {
+        html += `<span class="ball green" style="width:24px;height:24px;font-size:11px;">${String(n).padStart(2,'0')}</span>`;
+      });
+    } else if (cfg.type === 'digit3' || cfg.type === 'digit5') {
+      const len = cfg.type === 'digit3' ? 3 : 5;
+      for (let i = 0; i < len; i++) {
+        const n = Math.floor(Math.random() * 10);
+        html += `<span class="ball orange" style="width:24px;height:24px;font-size:11px;">${n}</span>`;
+      }
+    } else if (cfg.type === 'digit7') {
+      for (let i = 0; i < 6; i++) {
+        const n = Math.floor(Math.random() * 10);
+        html += `<span class="ball orange" style="width:24px;height:24px;font-size:11px;">${n}</span>`;
+      }
+      const last = Math.floor(Math.random() * 15);
+      html += `<span class="ball blue" style="width:24px;height:24px;font-size:11px;">${String(last).padStart(2,'0')}</span>`;
+    }
+
+    html += `</div>`;
+  }
+
+  // 保留头部的标题栏，下面换成号码
+  const headerHtml = cardEl.querySelector('.mech-header').outerHTML;
+  cardEl.innerHTML = headerHtml + `<div style="margin-top:12px;">${html}</div>`;
+}
+
+renderHome();
+</script>
+
+</body>
+</html>
