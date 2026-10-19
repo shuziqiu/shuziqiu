@@ -174,6 +174,78 @@ body {
   font-size: 10px;
   padding-top: 8px;
 }
+.exclude-grid {
+  margin: 4px 0 8px;
+}
+.exclude-zone {
+  margin-bottom: 8px;
+}
+.exclude-zone-label {
+  font-size: 10px;
+  color: #888;
+  margin-bottom: 4px;
+}
+.num-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.num-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #fff;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.15s;
+}
+.num-btn.blue {
+  background: rgba(52,152,219,0.25);
+}
+.num-btn.excluded {
+  border: 2px solid #e74c3c;
+  background: rgba(231,76,60,0.15);
+  color: #ff6b6b;
+}
+.exclude-gen-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px;
+  background: #27ae60;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.exclude-gen-btn:hover {
+  background: #2ecc71;
+}
+.exclude-result {
+  margin-top: 10px;
+}
+.exclude-err {
+  color: #e74c3c;
+  font-size: 12px;
+  text-align: center;
+  padding: 8px 0;
+}
+.exclude-group {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
 .result-area {
   margin: 20px 0;
   padding: 20px;
@@ -527,7 +599,7 @@ const MECHANISMS = [
     paramsHtml: '<input type="number" value="90" min="0" class="wide"> <span class="label">-</span> <input type="number" value="130" min="0" class="wide"> <span class="label">和值</span>'
   },
   { name: "排除生成", paramsHtml: '' },
-  { name: "手动排除法", paramsHtml: '' }
+  { name: "手动排除法", paramsHtml: '', exclude: true }
 ];
 
 function renderHome() {
@@ -557,24 +629,37 @@ function showGame(key) {
   MECHANISMS.forEach((m, idx) => {
     const card = document.createElement('div');
     card.className = 'mech-card';
-    card.innerHTML = `
-      <div class="mech-header">
-        <div class="mech-name">${m.name}</div>
-        <div class="help-icon">?</div>
-        <div class="mech-params">${m.paramsHtml}</div>
-      </div>
-      <div class="mech-hint">点击机制名称生成 5 组号码</div>
-    `;
-    card.onclick = (e) => {
-      if (e.target.tagName === 'INPUT') return;
-      if (!unlocked) {
-        pendingAction = () => generateNumber(key, idx, card);
-        openLock();
-        return;
-      }
-      generateNumber(key, idx, card);
-    };
+    if (m.exclude) {
+      card.innerHTML = `
+        <div class="mech-header">
+          <div class="mech-name">${m.name}</div>
+          <div class="help-icon">?</div>
+        </div>
+        <div class="exclude-grid" id="excludeGrid_${key}"></div>
+        <button class="exclude-gen-btn" onclick="excludeGenerate('${key}')">从剩余号码生成5组</button>
+        <div class="exclude-result" id="excludeResult_${key}"></div>
+      `;
+    } else {
+      card.innerHTML = `
+        <div class="mech-header">
+          <div class="mech-name">${m.name}</div>
+          <div class="help-icon">?</div>
+          <div class="mech-params">${m.paramsHtml}</div>
+        </div>
+        <div class="mech-hint">点击机制名称生成 5 组号码</div>
+      `;
+      card.onclick = (e) => {
+        if (e.target.tagName === 'INPUT') return;
+        if (!unlocked) {
+          pendingAction = () => generateNumber(key, idx, card);
+          openLock();
+          return;
+        }
+        generateNumber(key, idx, card);
+      };
+    }
     mechList.appendChild(card);
+    if (m.exclude) renderExcludeGrid(key);
   });
 }
 
@@ -628,6 +713,121 @@ function generateNumber(key, mechIdx, cardEl) {
 function goHome() {
   document.getElementById('homePage').classList.remove('hidden');
   document.getElementById('gamePage').classList.remove('active');
+}
+
+function rangeFromTo(a, b) {
+  const arr = [];
+  for (let i = a; i <= b; i++) arr.push(i);
+  return arr;
+}
+
+function renderExcludeGrid(key) {
+  const cfg = GAMES[key];
+  const grid = document.getElementById('excludeGrid_' + key);
+  if (!grid) return;
+  grid.innerHTML = '';
+  const zones = [];
+  if (cfg.type === 'redblue') {
+    for (let start = 1; start <= cfg.redMax; start += 11) {
+      const end = Math.min(start + 10, cfg.redMax);
+      zones.push({ label: `红球 ${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')}`, nums: rangeFromTo(start, end), zone: 'red' });
+    }
+    for (let start = 1; start <= cfg.blueMax; start += 8) {
+      const end = Math.min(start + 7, cfg.blueMax);
+      zones.push({ label: `蓝球 ${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')}`, nums: rangeFromTo(start, end), zone: 'blue' });
+    }
+  } else if (cfg.type === 'single') {
+    const step = cfg.redMax > 40 ? 10 : 11;
+    for (let start = 1; start <= cfg.redMax; start += step) {
+      const end = Math.min(start + step - 1, cfg.redMax);
+      zones.push({ label: `${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')}`, nums: rangeFromTo(start, end), zone: 'red' });
+    }
+  } else if (cfg.type === 'digit7' || cfg.type === 'digit3' || cfg.type === 'digit5') {
+    const len = cfg.type === 'digit7' ? 7 : (cfg.type === 'digit3' ? 3 : 5);
+    for (let i = 0; i < len; i++) {
+      const max = (cfg.type === 'digit7' && i === 6) ? 14 : 9;
+      zones.push({ label: `第${i + 1}位`, nums: Array.from({length: max + 1}, (_, k) => k), zone: 'd' + i });
+    }
+  }
+  zones.forEach(z => {
+    const zdiv = document.createElement('div');
+    zdiv.className = 'exclude-zone';
+    const lab = document.createElement('div');
+    lab.className = 'exclude-zone-label';
+    lab.textContent = z.label;
+    zdiv.appendChild(lab);
+    const wrap = document.createElement('div');
+    wrap.className = 'num-wrap';
+    z.nums.forEach(n => {
+      const b = document.createElement('button');
+      b.className = 'num-btn' + (z.zone === 'blue' ? ' blue' : '');
+      b.type = 'button';
+      b.dataset.zone = z.zone;
+      b.dataset.num = n;
+      b.textContent = String(n).padStart(2, '0');
+      b.onclick = () => b.classList.toggle('excluded');
+      wrap.appendChild(b);
+    });
+    zdiv.appendChild(wrap);
+    grid.appendChild(zdiv);
+  });
+}
+
+function excludeGenerate(key) {
+  if (!unlocked) {
+    pendingAction = () => excludeGenerate(key);
+    openLock();
+    return;
+  }
+  const cfg = GAMES[key];
+  const grid = document.getElementById('excludeGrid_' + key);
+  const result = document.getElementById('excludeResult_' + key);
+  if (!grid || !result) return;
+  const excl = {};
+  grid.querySelectorAll('.num-btn.excluded').forEach(b => {
+    const z = b.dataset.zone;
+    if (!excl[z]) excl[z] = new Set();
+    excl[z].add(parseInt(b.dataset.num, 10));
+  });
+  let html = '';
+  for (let group = 0; group < 5; group++) {
+    let balls = '';
+    if (cfg.type === 'redblue') {
+      const redPool = rangeFromTo(1, cfg.redMax).filter(n => !(excl.red || new Set()).has(n));
+      const bluePool = rangeFromTo(1, cfg.blueMax).filter(n => !(excl.blue || new Set()).has(n));
+      if (redPool.length < cfg.redPick || bluePool.length < cfg.bluePick) {
+        result.innerHTML = '<div class="exclude-err">剩余号码不足，请取消部分排除</div>';
+        return;
+      }
+      const reds = shuffle(redPool).slice(0, cfg.redPick).sort((a,b) => a-b);
+      const blues = shuffle(bluePool).slice(0, cfg.bluePick).sort((a,b) => a-b);
+      reds.forEach(n => { balls += `<span class="ball red" style="width:24px;height:24px;font-size:11px;">${String(n).padStart(2,'0')}</span>`; });
+      balls += `<span style="color:#888;margin:0 4px;">+</span>`;
+      blues.forEach(n => { balls += `<span class="ball blue" style="width:24px;height:24px;font-size:11px;">${String(n).padStart(2,'0')}</span>`; });
+    } else if (cfg.type === 'single') {
+      const pool = rangeFromTo(1, cfg.redMax).filter(n => !(excl.red || new Set()).has(n));
+      if (pool.length < cfg.redPick) {
+        result.innerHTML = '<div class="exclude-err">剩余号码不足，请取消部分排除</div>';
+        return;
+      }
+      const nums = shuffle(pool).slice(0, cfg.redPick).sort((a,b) => a-b);
+      nums.forEach(n => { balls += `<span class="ball green" style="width:24px;height:24px;font-size:11px;">${String(n).padStart(2,'0')}</span>`; });
+    } else {
+      const len = cfg.type === 'digit7' ? 7 : (cfg.type === 'digit3' ? 3 : 5);
+      for (let i = 0; i < len; i++) {
+        const max = (cfg.type === 'digit7' && i === 6) ? 14 : 9;
+        const pool = rangeFromTo(0, max).filter(n => !(excl['d' + i] || new Set()).has(n));
+        if (pool.length === 0) {
+          result.innerHTML = '<div class="exclude-err">第' + (i + 1) + '位数字全部被排除，请取消部分排除</div>';
+          return;
+        }
+        const n = pool[Math.floor(Math.random() * pool.length)];
+        balls += `<span class="ball ${(cfg.type === 'digit7' && i === 6) ? 'blue' : 'orange'}" style="width:24px;height:24px;font-size:11px;">${String(n).padStart(2,'0')}</span>`;
+      }
+    }
+    html += `<div class="exclude-group">${balls}</div>`;
+  }
+  result.innerHTML = html;
 }
 
 function shuffle(arr) {
