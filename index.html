@@ -209,9 +209,112 @@ footer {
   font-size: 12px;
   line-height: 1.6;
 }
+.lock-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.lock-box {
+  width: 100%;
+  max-width: 360px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 28px 22px;
+  text-align: center;
+  position: relative;
+}
+.lock-box .lock-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #aaa;
+  font-size: 18px;
+  line-height: 32px;
+  text-align: center;
+  cursor: pointer;
+  padding: 0;
+}
+.lock-box .lock-close:hover {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+.lock-box h2 {
+  color: #f1c40f;
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+.lock-box .lock-sub {
+  color: #888;
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+.lock-box input {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+  outline: none;
+  margin-bottom: 14px;
+}
+.lock-box input:focus {
+  border-color: #f1c40f;
+}
+.lock-box button {
+  width: 100%;
+  padding: 12px;
+  background: #f1c40f;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.lock-box button:hover {
+  background: #f7d44a;
+}
+.lock-error {
+  color: #e74c3c;
+  font-size: 13px;
+  margin-top: 12px;
+  display: none;
+}
+.lock-tip {
+  color: #666;
+  font-size: 11px;
+  margin-top: 18px;
+  line-height: 1.6;
+}
 </style>
 </head>
 <body>
+
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-box">
+    <button class="lock-close" onclick="closeLock()" aria-label="关闭">×</button>
+    <h2>数字生成器</h2>
+    <div class="lock-sub">输入时效码后即可使用</div>
+    <input type="text" id="keyInput" placeholder="请输入时效码（SSQ-开头）" onkeydown="if(event.key==='Enter')unlock()">
+    <button onclick="unlock()">解 锁</button>
+    <div class="lock-error" id="lockError"></div>
+    <div class="lock-tip">时效码由时效码生成器生成，请联系生成者获取<br>每次解锁后请妥善保管，到期后需重新获取</div>
+  </div>
+</div>
 
 <div class="home-page" id="homePage">
   <div class="header">
@@ -235,6 +338,108 @@ footer {
 </footer>
 
 <script>
+const SALT = 'SSQ-LOCK-2026-KEY';
+let unlocked = false;
+let pendingAction = null;
+
+function deobfuscate(code) {
+  let reversed = code.split('').reverse().join('');
+  while (reversed.length % 4 !== 0) reversed += '=';
+  const decoded = atob(reversed);
+  let result = '';
+  for (let i = 0; i < decoded.length; i++) {
+    result += String.fromCharCode(decoded.charCodeAt(i) ^ SALT.charCodeAt(i % SALT.length));
+  }
+  return result;
+}
+
+const REVOKE_URL = 'https://cdn.jsdelivr.net/gh/shuziqiu/shuziqiu@main/revoked.json';
+
+function checkKey(input) {
+  const code = input.trim();
+  if (!code.startsWith('SSQ-')) return { ok: false, msg: '时效码格式不正确' };
+  let payload;
+  try {
+    payload = deobfuscate(code.slice(4));
+  } catch (e) {
+    return { ok: false, msg: '时效码无效' };
+  }
+  const parts = payload.split('-');
+  let id = null, exp = null;
+  // 新格式: type-id-exp（id 为 4-8 位字母数字，exp 为时间戳）
+  if (parts.length === 3 && /^[a-z0-9]{4,8}$/.test(parts[1]) && /^\d{10,14}$/.test(parts[2])) {
+    id = parts[1];
+    exp = parseInt(parts[2], 10);
+  } else if (parts.length === 2 && /^\d{10,14}$/.test(parts[1])) {
+    // 旧格式兼容: type-exp（无 ID，无法作废）
+    exp = parseInt(parts[1], 10);
+  } else {
+    return { ok: false, msg: '时效码无效' };
+  }
+  if (Date.now() > exp) return { ok: false, msg: '时效码已过期，请联系生成者获取新码' };
+  return { ok: true, exp: exp, id: id };
+}
+
+function openLock() {
+  document.getElementById('lockOverlay').style.display = 'flex';
+  document.getElementById('lockError').style.display = 'none';
+  document.getElementById('keyInput').value = '';
+  document.getElementById('keyInput').focus();
+}
+
+function closeLock() {
+  document.getElementById('lockOverlay').style.display = 'none';
+  pendingAction = null;
+}
+
+async function unlock() {
+  const input = document.getElementById('keyInput');
+  const err = document.getElementById('lockError');
+  const unlockBtn = document.querySelector('.lock-box button[onclick="unlock()"]');
+  const r = checkKey(input.value);
+  if (!r.ok) {
+    err.textContent = r.msg;
+    err.style.display = 'block';
+    return;
+  }
+  // 联网查询作废名单（有 ID 的码才查）
+  if (r.id) {
+    if (unlockBtn) { unlockBtn.textContent = '验证中…'; unlockBtn.disabled = true; }
+    let revoked = false, checkFailed = false;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const resp = await fetch(REVOKE_URL + '?t=' + Date.now(), { signal: ctrl.signal, cache: 'no-store' });
+      const list = await resp.json();
+      revoked = Array.isArray(list) && list.includes(r.id);
+    } catch (e) {
+      checkFailed = true;
+    } finally {
+      clearTimeout(timer);
+    }
+    if (unlockBtn) { unlockBtn.textContent = '解 锁'; unlockBtn.disabled = false; }
+    if (revoked) {
+      err.textContent = '该时效码已被作废，无法使用';
+      err.style.display = 'block';
+      return;
+    }
+    if (checkFailed) {
+      err.textContent = '无法验证时效码状态，请检查网络后重试';
+      err.style.display = 'block';
+      return;
+    }
+  }
+  err.style.display = 'none';
+  document.getElementById('lockOverlay').style.display = 'none';
+  input.value = '';
+  unlocked = true;
+  if (pendingAction) {
+    const fn = pendingAction;
+    pendingAction = null;
+    fn();
+  }
+}
+
 const GAMES = {
   g1: {
     name: "33选6 + 16选1",
@@ -352,6 +557,11 @@ function showGame(key) {
     `;
     card.onclick = (e) => {
       if (e.target.tagName === 'INPUT') return;
+      if (!unlocked) {
+        pendingAction = () => generateNumber(key, idx, card);
+        openLock();
+        return;
+      }
       generateNumber(key, idx, card);
     };
     mechList.appendChild(card);
