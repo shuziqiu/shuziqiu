@@ -97,7 +97,7 @@ body {
 }
 .mechanism-list {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
   margin-bottom: 20px;
 }
@@ -225,42 +225,63 @@ body {
   padding: 2px;
 }
 .exclude-zone {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 .exclude-zone-label {
   font-size: 12px;
-  color: #888;
-  margin-bottom: 4px;
+  color: #bbb;
+  margin-bottom: 6px;
   padding-left: 2px;
 }
-.exclude-row {
+.zone-nums {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 10px 14px;
-  margin: 3px 0;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.exclude-row {
+  width: 30px !important;
+  height: 30px !important;
+  padding: 0 !important;
+  margin: 0;
   background: #f1c40f;
-  border: 1px solid #f1c40f;
-  border-radius: 8px;
+  border: none;
+  border-radius: 50% !important;
   color: #222;
-  font-size: 14px;
+  font-size: 12px !important;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .exclude-row.blue {
   background: #4a9eff;
-  border-color: #4a9eff;
+  color: #fff;
 }
 .exclude-row.excluded {
-  background: rgba(255,255,255,0.07);
-  border-color: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.08);
   color: #555;
   font-weight: normal;
+  border: 1px solid rgba(255,255,255,0.15);
 }
-.exclude-row .er-num {
-  width: 30px;
+.exclude-hint-btn {
+  position: static;
+  transform: none;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  background: #3498db !important;
+  color: #fff !important;
+  border: none;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 .num-wrap {
   display: flex;
@@ -292,7 +313,7 @@ body {
 }
 .exclude-stats {
   font-size: 12px;
-  color: #f1c40f;
+  color: #999;
   margin: 6px 0;
   text-align: center;
 }
@@ -305,8 +326,8 @@ body {
 .exclude-regenerate {
   flex: 1;
   padding: 10px;
-  background: #27ae60;
-  color: #fff;
+  background: #27ae60 !important;
+  color: #fff !important;
   border: none;
   border-radius: 8px;
   font-size: 13px;
@@ -319,8 +340,8 @@ body {
 .exclude-back {
   flex: 1;
   padding: 10px;
-  background: rgba(255,255,255,0.15);
-  color: #fff;
+  background: rgba(255,255,255,0.15) !important;
+  color: #fff !important;
   border: none;
   border-radius: 8px;
   font-size: 13px;
@@ -333,8 +354,8 @@ body {
   width: 100%;
   margin-top: 6px;
   padding: 10px;
-  background: #27ae60;
-  color: #fff;
+  background: #27ae60 !important;
+  color: #fff !important;
   border: none;
   border-radius: 8px;
   font-size: 13px;
@@ -508,14 +529,15 @@ footer {
   <div class="lock-box exclude-box">
     <div id="excludeSelectView">
       <div class="exclude-topbar">
+        <button class="exclude-hint-btn" onclick="toggleExcludeHint()" aria-label="帮助">?</button>
         <h2>手动排除法</h2>
         <div class="exclude-topbtns">
-          <button class="exclude-gen-top" onclick="excludeGenerate()">生成号码</button>
           <button class="lock-close" onclick="closeExclude()" aria-label="关闭">×</button>
         </div>
       </div>
-      <div class="lock-sub">点击数字排除，再次点击恢复</div>
+      <div class="lock-sub" id="excludeHint">点击数字排除，再次点击恢复</div>
       <div class="exclude-list" id="excludeGridModal"></div>
+      <button class="exclude-gen-btn" onclick="excludeGenerate()">从剩余号码生成5组</button>
       <div class="exclude-stats" id="excludeStats"></div>
       <div class="exclude-err" id="excludeErr"></div>
     </div>
@@ -560,6 +582,16 @@ footer {
 const SALT = 'SSQ-LOCK-2026-KEY';
 let unlocked = false;
 let pendingAction = null;
+const LOCK_STORE_KEY = 'ssq_tool_lock';
+// 页面加载时恢复解锁状态：时效码有效期内免重复输入，到期自动失效
+try {
+  const saved = JSON.parse(localStorage.getItem(LOCK_STORE_KEY) || 'null');
+  if (saved && saved.exp && Date.now() < saved.exp) {
+    unlocked = true;
+  } else if (saved) {
+    localStorage.removeItem(LOCK_STORE_KEY);
+  }
+} catch (e) {}
 
 function deobfuscate(code) {
   let reversed = code.split('').reverse().join('');
@@ -662,6 +694,10 @@ async function unlock() {
   document.getElementById('lockOverlay').style.display = 'none';
   input.value = '';
   unlocked = true;
+  // 保存解锁状态，时效期内无需重复输入
+  try {
+    localStorage.setItem(LOCK_STORE_KEY, JSON.stringify({ exp: r.exp, id: r.id || null, at: Date.now() }));
+  } catch (e) {}
   if (pendingAction) {
     const fn = pendingAction;
     pendingAction = null;
@@ -929,19 +965,21 @@ function renderExcludeGrid() {
     zdiv.className = 'exclude-zone';
     const lab = document.createElement('div');
     lab.className = 'exclude-zone-label';
-    lab.dataset.base = z.label;
-    lab.textContent = z.label + '：0';
+    lab.textContent = z.label + '：';
     zdiv.appendChild(lab);
+    const wrap = document.createElement('div');
+    wrap.className = 'zone-nums';
     z.nums.forEach(n => {
       const b = document.createElement('button');
       b.className = 'exclude-row' + (z.zone === 'blue' ? ' blue' : '');
       b.type = 'button';
       b.dataset.zone = z.zone;
       b.dataset.num = n;
-      b.innerHTML = `<span class="er-num">${String(n).padStart(2, '0')}</span>`;
+      b.textContent = String(n).padStart(2, '0');
       b.onclick = () => { b.classList.toggle('excluded'); updateExcludeStats(); };
-      zdiv.appendChild(b);
+      wrap.appendChild(b);
     });
+    zdiv.appendChild(wrap);
     grid.appendChild(zdiv);
   });
 }
@@ -954,12 +992,6 @@ function updateExcludeStats() {
   if (!grid) return;
   const stats = document.getElementById('excludeStats');
   if (!stats) return;
-  grid.querySelectorAll('.exclude-zone').forEach(zdiv => {
-    const lab = zdiv.querySelector('.exclude-zone-label');
-    if (!lab || !lab.dataset.base) return;
-    const cnt = zdiv.querySelectorAll('.exclude-row.excluded').length;
-    lab.textContent = lab.dataset.base + '：' + cnt;
-  });
   if (cfg.type === 'redblue') {
     const reds = grid.querySelectorAll('.exclude-row[data-zone=red].excluded').length;
     const blues = grid.querySelectorAll('.exclude-row[data-zone=blue].excluded').length;
@@ -971,6 +1003,11 @@ function updateExcludeStats() {
     const total = grid.querySelectorAll('.exclude-row.excluded').length;
     stats.textContent = `已排除${total}个数字`;
   }
+}
+
+function toggleExcludeHint() {
+  const h = document.getElementById('excludeHint');
+  if (h) h.style.display = h.style.display === 'none' ? 'block' : 'none';
 }
 
 function backToSelect() {
@@ -1010,9 +1047,9 @@ function excludeGenerate() {
       }
       const reds = shuffle(redPool).slice(0, cfg.redPick).sort((a,b) => a-b);
       const blues = shuffle(bluePool).slice(0, cfg.bluePick).sort((a,b) => a-b);
-      reds.forEach(n => { balls += `<span class="ball red" style="width:24px;height:24px;font-size:11px;">${String(n).padStart(2,'0')}</span>`; });
+      reds.forEach(n => { balls += `<span class="ball red" style="width:34px;height:34px;font-size:15px;">${String(n).padStart(2,'0')}</span>`; });
       balls += `<span style="color:#888;margin:0 4px;">+</span>`;
-      blues.forEach(n => { balls += `<span class="ball blue" style="width:24px;height:24px;font-size:11px;">${String(n).padStart(2,'0')}</span>`; });
+      blues.forEach(n => { balls += `<span class="ball blue" style="width:34px;height:34px;font-size:15px;">${String(n).padStart(2,'0')}</span>`; });
     } else if (cfg.type === 'single') {
       const pool = rangeFromTo(1, cfg.redMax).filter(n => !(excl.red || new Set()).has(n));
       if (pool.length < cfg.redPick) {
@@ -1020,7 +1057,7 @@ function excludeGenerate() {
         return;
       }
       const nums = shuffle(pool).slice(0, cfg.redPick).sort((a,b) => a-b);
-      nums.forEach(n => { balls += `<span class="ball green" style="width:24px;height:24px;font-size:11px;">${String(n).padStart(2,'0')}</span>`; });
+      nums.forEach(n => { balls += `<span class="ball green" style="width:34px;height:34px;font-size:15px;">${String(n).padStart(2,'0')}</span>`; });
     } else {
       const len = cfg.type === 'digit7' ? 7 : (cfg.type === 'digit3' ? 3 : 5);
       for (let i = 0; i < len; i++) {
@@ -1031,7 +1068,7 @@ function excludeGenerate() {
           return;
         }
         const n = pool[Math.floor(Math.random() * pool.length)];
-        balls += `<span class="ball ${(cfg.type === 'digit7' && i === 6) ? 'blue' : 'orange'}" style="width:24px;height:24px;font-size:11px;">${String(n).padStart(2,'0')}</span>`;
+        balls += `<span class="ball ${(cfg.type === 'digit7' && i === 6) ? 'blue' : 'orange'}" style="width:34px;height:34px;font-size:15px;">${String(n).padStart(2,'0')}</span>`;
       }
     }
     html += `<div class="exclude-group">${balls}</div>`;
