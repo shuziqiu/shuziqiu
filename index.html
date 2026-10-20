@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>纯随机数生成器 - 数字生成工具</title>
-<meta name="description" content="纯随机数生成器，纯随机生成、无预测功能。支持33选6+16选1、35选5+12选2、30选7、7位数字、80选10、3位数字、5位数字等玩法，每次生成5组随机数字，不基于任何历史数据，仅供娱乐参考。">
-<meta name="keywords" content="随机数生成器,数字生成器,纯随机生成,33选6,16选1,35选5,12选2,30选7,7位数字,80选10,3位数字,5位数字,随机数字,数字工具">
+<meta name="description" content="纯随机数生成器，所有数字均为计算机随机产生，不基于任何历史数据或统计规律。支持多种数字组合方式，每次生成5组随机数字，仅供娱乐参考。">
+<meta name="keywords" content="随机数生成器,数字生成器,纯随机生成,随机数字,数字工具,号码生成,随机号码">
 <meta name="robots" content="index, follow">
 <meta name="author" content="shuziqiu">
 <link rel="canonical" href="https://shuziqiu.github.io/shuziqiu/">
 <meta property="og:title" content="纯随机数生成器 - 数字生成工具">
-<meta property="og:description" content="纯随机生成、无预测功能。支持33选6+16选1、35选5+12选2、30选7、7位数字、80选10、3位数字、5位数字，每次生成5组随机数字。">
+<meta property="og:description" content="纯随机数生成工具，所有数字均为计算机随机产生，支持多种数字组合方式，每次生成5组随机数字。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://shuziqiu.github.io/shuziqiu/">
 <script type="application/ld+json">
@@ -18,7 +18,7 @@
   "@context": "https://schema.org",
   "@type": "WebApplication",
   "name": "纯随机数生成器",
-  "description": "纯随机数生成工具，每次生成5组随机数字，支持多种数字组合玩法，无预测功能。",
+  "description": "纯随机数生成工具，所有数字均为计算机随机产生，每次生成5组随机数字，支持多种数字组合方式。",
   "url": "https://shuziqiu.github.io/shuziqiu/",
   "applicationCategory": "UtilityApplication",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
@@ -529,7 +529,7 @@ footer {
       <div class="exclude-result" id="excludeResultModal"></div>
       <div style="display:flex;gap:10px;margin-top:12px;">
         <button class="exclude-regenerate" onclick="reGenerate()">重新生成</button>
-        <button class="exclude-back" onclick="backToSelect()">返回重新选号</button>
+        <button class="exclude-back" onclick="backToSelect()">返回重新选择</button>
       </div>
     </div>
   </div>
@@ -538,7 +538,7 @@ footer {
 <div class="home-page" id="homePage">
   <div class="header">
     <h1>数字生成器</h1>
-    <div class="sub">纯随机生成 · 无预测功能</div>
+    <div class="sub">纯随机生成 · 随机数工具</div>
   </div>
   <div class="game-grid" id="gameGrid"></div>
 </div>
@@ -552,7 +552,7 @@ footer {
 
 <footer>
   <strong>随机数生成器说明</strong><br>
-  本工具为随机数生成器。所有生成的数字均为计算机随机产生，不基于任何历史数据或统计规律，与任何彩票开奖结果不存在因果关系。本工具不提供预测、分析或选号建议，任何选号方法均无法提高中奖概率。用户将生成结果用于任何场景（包括但不限于购买彩票）所产生的后果，均由用户自行承担。本工具与任何彩票发行或销售机构无关联，未授权任何平台或个人以本工具名义收费荐号。<br>
+  本工具为随机数生成器。所有生成的数字均为计算机随机产生，不基于任何历史数据或统计规律，与任何结果不存在因果关系。本工具不提供分析或建议，任何方法均无法改变随机结果。用户将生成结果用于任何场景所产生的后果，均由用户自行承担。本工具与任何发行或销售机构无关联，未授权任何平台或个人以本工具名义收费推荐。<br>
   <strong style="color:#f1c40f;">建议理性娱乐、量力而行，未成年人禁止使用。</strong>
 </footer>
 
@@ -671,24 +671,24 @@ async function unlock() {
 
 const GAMES = {
   g1: {
-    name: "33选6 + 16选1",
-    range: "数字1-33选6个，数字1-16选1个",
+    name: "数字组合 6+1",
+    range: "数字1-33取6个，数字1-16取1个",
     color: "#e74c3c",
     type: "redblue",
     redMax: 33, redPick: 6,
     blueMax: 16, bluePick: 1
   },
   g2: {
-    name: "35选5 + 12选2",
-    range: "数字1-35选5个，数字1-12选2个",
+    name: "数字组合 5+2",
+    range: "数字1-35取5个，数字1-12取2个",
     color: "#e67e22",
     type: "redblue",
     redMax: 35, redPick: 5,
     blueMax: 12, bluePick: 2
   },
   g3: {
-    name: "30选7",
-    range: "1-30选7个",
+    name: "数字组合 7",
+    range: "1-30取7个",
     color: "#9b59b6",
     type: "single",
     redMax: 30, redPick: 7,
@@ -701,8 +701,8 @@ const GAMES = {
     type: "digit7"
   },
   g5: {
-    name: "80选10",
-    range: "1-80选10个",
+    name: "数字组合 10",
+    range: "1-80取10个",
     color: "#3498db",
     type: "single",
     redMax: 80, redPick: 10,
