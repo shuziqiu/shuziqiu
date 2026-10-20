@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>纯随机数生成器 - 数字生成工具</title>
 <meta name="description" content="纯随机数生成器，所有数字均为计算机随机产生，不基于任何历史数据或统计规律。支持多种数字组合方式，每次生成5组随机数字，仅供娱乐参考。">
-<meta name="keywords" content="随机数生成器,数字生成器,纯随机生成,随机数字,数字工具,号码生成,随机号码">
+<meta name="keywords" content="随机数生成器,数字生成器,纯随机生成,随机数字,数字工具,数字生成,随机数字">
 <meta name="robots" content="index, follow">
 <meta name="author" content="shuziqiu">
 <link rel="canonical" href="https://shuziqiu.github.io/shuziqiu/">
@@ -537,7 +537,7 @@ footer {
       </div>
       <div class="lock-sub" id="excludeHint">点击数字排除，再次点击恢复</div>
       <div class="exclude-list" id="excludeGridModal"></div>
-      <button class="exclude-gen-btn" onclick="excludeGenerate()">从剩余号码生成5组</button>
+      <button class="exclude-gen-btn" onclick="excludeGenerate()">从剩余数字生成5组</button>
       <div class="exclude-stats" id="excludeStats"></div>
       <div class="exclude-err" id="excludeErr"></div>
     </div>
@@ -568,7 +568,7 @@ footer {
 <div class="game-page" id="gamePage">
   <div class="back-btn" onclick="goHome()">← 返回首页</div>
   <div class="game-title" id="gameTitle"></div>
-  <div style="text-align:center;color:#888;font-size:14px;margin-bottom:16px;">点击下方任意机制名称即可生成号码</div>
+  <div style="text-align:center;color:#888;font-size:14px;margin-bottom:16px;">点击下方任意机制名称即可生成数字</div>
   <div class="mechanism-list" id="mechList"></div>
 </div>
 
@@ -767,11 +767,11 @@ const GAMES = {
 const MECHANISMS = [
   { 
     name: "完全随机", 
-    paramsHtml: '<input type="number" value="1" min="0"> <span class="label">热</span> <input type="number" value="3" min="0"> <span class="label">温</span> <input type="number" value="2" min="0"> <span class="label">冷</span>'
+    paramsHtml: '<input type="number" value="1" min="0"> <span class="label">高</span> <input type="number" value="3" min="0"> <span class="label">中</span> <input type="number" value="2" min="0"> <span class="label">低</span>'
   },
   { 
     name: "分组随机", 
-    paramsHtml: '<input type="number" value="2" min="0"> <span class="label">一区</span> <input type="number" value="2" min="0"> <span class="label">二区</span> <input type="number" value="2" min="0"> <span class="label">三区</span>'
+    paramsHtml: '<input type="number" value="2" min="0"> <span class="label">第1组</span> <input type="number" value="2" min="0"> <span class="label">第2组</span> <input type="number" value="2" min="0"> <span class="label">第3组</span>'
   },
   { 
     name: "奇偶随机", 
@@ -779,7 +779,7 @@ const MECHANISMS = [
   },
   { 
     name: "区间随机", 
-    paramsHtml: '<input type="number" value="90" min="0" class="wide"> <span class="label">-</span> <input type="number" value="130" min="0" class="wide"> <span class="label">和值</span>'
+    paramsHtml: '<input type="number" value="90" min="0" class="wide"> <span class="label">-</span> <input type="number" value="130" min="0" class="wide"> <span class="label">总和</span>'
   },
   { name: "排除生成", paramsHtml: '' },
   { name: "手动排除法", paramsHtml: '', exclude: true }
@@ -828,7 +828,7 @@ function showGame(key) {
           <div class="help-icon">?</div>
           <div class="mech-params">${m.paramsHtml}</div>
         </div>
-        <div class="mech-hint">点击机制名称生成 5 组号码</div>
+        <div class="mech-hint">点击机制名称生成 5 组数字</div>
       `;
       card.onclick = (e) => {
         if (e.target.tagName === 'INPUT') return;
@@ -941,16 +941,16 @@ function renderExcludeGrid() {
     let zoneIdx = 1;
     for (let start = 1; start <= cfg.redMax; start += 11) {
       const end = Math.min(start + 10, cfg.redMax);
-      zones.push({ label: `${cnNum(zoneIdx)}区(${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')})`, nums: rangeFromTo(start, end), zone: 'red' });
+      zones.push({ label: `第${zoneIdx}组(${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')})`, nums: rangeFromTo(start, end), zone: 'red' });
       zoneIdx++;
     }
-    zones.push({ label: `蓝球(01-${String(cfg.blueMax).padStart(2,'0')})`, nums: rangeFromTo(1, cfg.blueMax), zone: 'blue' });
+    zones.push({ label: `第4组(01-${String(cfg.blueMax).padStart(2,'0')})`, nums: rangeFromTo(1, cfg.blueMax), zone: 'blue' });
   } else if (cfg.type === 'single') {
     const step = 11;
     let zoneIdx = 1;
     for (let start = 1; start <= cfg.redMax; start += step) {
       const end = Math.min(start + step - 1, cfg.redMax);
-      zones.push({ label: `${cnNum(zoneIdx)}区(${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')})`, nums: rangeFromTo(start, end), zone: 'red' });
+      zones.push({ label: `第${zoneIdx}组(${String(start).padStart(2,'0')}-${String(end).padStart(2,'0')})`, nums: rangeFromTo(start, end), zone: 'red' });
       zoneIdx++;
     }
   } else if (cfg.type === 'digit7' || cfg.type === 'digit3' || cfg.type === 'digit5') {
@@ -995,10 +995,10 @@ function updateExcludeStats() {
   if (cfg.type === 'redblue') {
     const reds = grid.querySelectorAll('.exclude-row[data-zone=red].excluded').length;
     const blues = grid.querySelectorAll('.exclude-row[data-zone=blue].excluded').length;
-    stats.textContent = `已排除${reds}个红球、${blues}个蓝球`;
+    stats.textContent = `已排除${reds}个红色、${blues}个蓝色`;
   } else if (cfg.type === 'single') {
     const reds = grid.querySelectorAll('.exclude-row.excluded').length;
-    stats.textContent = `已排除${reds}个号码`;
+    stats.textContent = `已排除${reds}个数字`;
   } else {
     const total = grid.querySelectorAll('.exclude-row.excluded').length;
     stats.textContent = `已排除${total}个数字`;
@@ -1042,7 +1042,7 @@ function excludeGenerate() {
       const redPool = rangeFromTo(1, cfg.redMax).filter(n => !(excl.red || new Set()).has(n));
       const bluePool = rangeFromTo(1, cfg.blueMax).filter(n => !(excl.blue || new Set()).has(n));
       if (redPool.length < cfg.redPick || bluePool.length < cfg.bluePick) {
-        err.textContent = '剩余号码不足，请取消部分排除';
+        err.textContent = '剩余数字不足，请取消部分排除';
         return;
       }
       const reds = shuffle(redPool).slice(0, cfg.redPick).sort((a,b) => a-b);
@@ -1053,7 +1053,7 @@ function excludeGenerate() {
     } else if (cfg.type === 'single') {
       const pool = rangeFromTo(1, cfg.redMax).filter(n => !(excl.red || new Set()).has(n));
       if (pool.length < cfg.redPick) {
-        err.textContent = '剩余号码不足，请取消部分排除';
+        err.textContent = '剩余数字不足，请取消部分排除';
         return;
       }
       const nums = shuffle(pool).slice(0, cfg.redPick).sort((a,b) => a-b);
@@ -1134,7 +1134,7 @@ function generateNumber(key, mechIdx, cardEl) {
     html += `</div>`;
   }
 
-  // 保留头部的标题栏，下面换成号码
+  // 保留头部的标题栏，下面换成数字
   const headerHtml = cardEl.querySelector('.mech-header').outerHTML;
   cardEl.innerHTML = headerHtml + `<div style="margin-top:12px;">${html}</div>`;
 }
