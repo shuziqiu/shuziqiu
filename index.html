@@ -623,6 +623,60 @@ footer {
 .qr-modal-close:hover {
   background: rgba(0,0,0,0.15);
 }
+/* 机制参数错误提示 */
+.mech-card .mech-err {
+  color: #e74c3c;
+  font-size: 11px;
+  line-height: 1.6;
+  margin-top: 10px;
+  padding: 6px 10px;
+  background: rgba(231,76,60,0.12);
+  border-radius: 6px;
+}
+/* 机制说明弹窗 */
+.mech-desc-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 1100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.mech-desc-box {
+  background: #16213e;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 20px 18px 16px;
+  max-width: 380px;
+  width: 100%;
+}
+.mech-desc-title {
+  color: #f1c40f;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+.mech-desc-text {
+  color: #ddd;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.mech-desc-close {
+  margin-top: 14px;
+  width: 100%;
+  padding: 8px 0;
+  border: none;
+  border-radius: 8px;
+  background: #3498db;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+.mech-desc-close:hover {
+  background: #2980b9;
+}
 </style>
 </head>
 <body>
@@ -717,6 +771,14 @@ footer {
       <div class="qr-modal-title">分享工具</div>
       <img src="data:image/png;base64,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" alt="分享工具二维码">
       <div class="qr-modal-tip">长按或右键保存图片，扫码即可分享本工具</div>
+    </div>
+  </div>
+
+  <div class="mech-desc-overlay" id="mechDescOverlay" onclick="closeMechDesc()">
+    <div class="mech-desc-box" onclick="event.stopPropagation()">
+      <div class="mech-desc-title" id="mechDescTitle"></div>
+      <div class="mech-desc-text" id="mechDescText"></div>
+      <button class="mech-desc-close" onclick="closeMechDesc()">知道了</button>
     </div>
   </div>
 
@@ -915,22 +977,26 @@ const GAMES = {
 const MECHANISMS = [
   { 
     name: "完全随机", 
+    desc: "按「高/中/低」三段比例取号：号码区分为低、中、高三段，分别取对应数量的数字组成一组（可调顺序）。三段数量之和必须等于该玩法每组数字个数，否则不会生成，请按提示调整。",
     paramsHtml: '<input type="number" value="1" min="0"> <span class="label">高</span> <input type="number" value="3" min="0"> <span class="label">中</span> <input type="number" value="2" min="0"> <span class="label">低</span>'
   },
   { 
     name: "分组随机", 
+    desc: "按「第1组/第2组/第3组」连续分段取号：号码区按顺序分成三段区间，各段取对应数量的数字组成一组。三段数量之和必须等于该玩法每组数字个数，否则不会生成。",
     paramsHtml: '<input type="number" value="2" min="0"> <span class="label">第1组</span> <input type="number" value="2" min="0"> <span class="label">第2组</span> <input type="number" value="2" min="0"> <span class="label">第3组</span>'
   },
   { 
     name: "奇偶随机", 
+    desc: "按「奇/偶」数量取号：从号码区分别取指定个数的奇数和偶数组成一组。奇、偶数量之和必须等于该玩法每组数字个数，否则不会生成。",
     paramsHtml: '<input type="number" value="3" min="0"> <span class="label">奇</span> <input type="number" value="3" min="0"> <span class="label">偶</span>'
   },
   { 
     name: "区间随机", 
+    desc: "控制每组号码的总和：生成一组数字使其总和落在输入的区间内（低值-高值）。区间需在当前玩法可达到的范围内，否则会提示无法生成。",
     paramsHtml: '<input type="number" value="90" min="0" class="wide"> <span class="label">-</span> <input type="number" value="130" min="0" class="wide"> <span class="label">总和</span>'
   },
-  { name: "排除生成", paramsHtml: '' },
-  { name: "手动排除法", paramsHtml: '', exclude: true }
+  { name: "排除生成", paramsHtml: '', desc: "从号码池完全随机生成（无参数设置）" },
+  { name: "手动排除法", paramsHtml: '', exclude: true, desc: "手动勾选要排除的数字后，从剩余数字中生成" }
 ];
 
 function renderHome() {
@@ -964,7 +1030,7 @@ function showGame(key) {
       card.innerHTML = `
         <div class="mech-header">
           <div class="mech-name">${m.name}</div>
-          <div class="help-icon">?</div>
+          <div class="help-icon" onclick="showMechDesc(${idx}, event)">?</div>
         </div>
         <div class="mech-hint">点击机制名称打开排除选择</div>
       `;
@@ -973,7 +1039,7 @@ function showGame(key) {
       card.innerHTML = `
         <div class="mech-header">
           <div class="mech-name">${m.name}</div>
-          <div class="help-icon">?</div>
+          <div class="help-icon" onclick="showMechDesc(${idx}, event)">?</div>
           <div class="mech-params">${m.paramsHtml}</div>
         </div>
         <div class="mech-hint">点击机制名称生成 5 组数字</div>
@@ -1238,16 +1304,88 @@ function shuffle(arr) {
 
 function generateNumber(key, mechIdx, cardEl) {
   const cfg = GAMES[key];
+  const m = MECHANISMS[mechIdx];
+  const inputs = cardEl.querySelectorAll('.mech-params input');
+  const vals = Array.from(inputs).map(i => Math.max(0, parseInt(i.value, 10) || 0));
+
+  // 该玩法每组主区数字个数
+  const need = (cfg.type === 'redblue' || cfg.type === 'single') ? cfg.redPick
+             : (cfg.type === 'digit7') ? 6
+             : (cfg.type === 'digit3') ? 3 : 5;
+
+  // 清除上次的错误提示
+  const oldErr = cardEl.querySelector('.mech-err');
+  if (oldErr) oldErr.remove();
+
+  let groups = [];
+  let errMsg = '';
+
+  if (mechIdx === 0) { // 完全随机：高/中/低 三段比例取号
+    const sum = vals.reduce((a, b) => a + b, 0);
+    if (sum !== need) {
+      errMsg = '高/中/低数量之和（' + sum + '）应等于每组 ' + need + ' 个数字，请调整后再生成';
+    } else {
+      const zones = splitZones(cfg);
+      for (let g = 0; g < 5; g++) {
+        // zones[0]=低段、zones[1]=中段、zones[2]=高段；vals[0]=高输入、vals[1]=中输入、vals[2]=低输入
+        const parts = [
+          ...pickN(zones[0], vals[2]),  // 低段取"低"输入数量
+          ...pickN(zones[1], vals[1]),  // 中段取"中"输入数量
+          ...pickN(zones[2], vals[0])   // 高段取"高"输入数量
+        ].sort((a, b) => a - b);
+        groups.push(parts);
+      }
+    }
+  } else if (mechIdx === 1) { // 分组随机：号码区连续分三段
+    const sum = vals.reduce((a, b) => a + b, 0);
+    if (sum !== need) {
+      errMsg = '第1/2/3组数量之和（' + sum + '）应等于每组 ' + need + ' 个数字，请调整后再生成';
+    } else {
+      const zones = splitZones(cfg);
+      for (let g = 0; g < 5; g++) {
+        const parts = [
+          ...pickN(zones[0], vals[0]),
+          ...pickN(zones[1], vals[1]),
+          ...pickN(zones[2], vals[2])
+        ].sort((a, b) => a - b);
+        groups.push(parts);
+      }
+    }
+  } else if (mechIdx === 2) { // 奇偶随机：奇/偶分别取号
+    const sum = vals.reduce((a, b) => a + b, 0);
+    if (sum !== need) {
+      errMsg = '奇/偶数量之和（' + sum + '）应等于每组 ' + need + ' 个数字，请调整后再生成';
+    } else {
+      const oe = splitOddEven(cfg);
+      for (let g = 0; g < 5; g++) {
+        const parts = [...pickN(oe[0], vals[0]), ...pickN(oe[1], vals[1])].sort((a, b) => a - b);
+        groups.push(parts);
+      }
+    }
+  } else if (mechIdx === 3) { // 区间随机：每组总和在输入区间内
+    const lo = vals[0], hi = vals[1];
+    if (hi < lo) {
+      errMsg = '总和区间填写有误：高值应大于等于低值';
+    } else {
+      const minSum = need * minNum(cfg), maxSum = need * maxNum(cfg);
+      if (hi < minSum || lo > maxSum) {
+        errMsg = '总和区间（' + lo + '-' + hi + '）超出该玩法可达到范围（' + minSum + '-' + maxSum + '），请调整后再生成';
+      } else {
+        for (let g = 0; g < 5; g++) {
+          const grp = genInSum(cfg, need, lo, hi, 400);
+          if (grp) { groups.push(grp); } else { errMsg = '未能在区间内生成足够组数，请放宽总和区间或重试'; break; }
+        }
+      }
+    }
+  } else { // 排除生成：完全随机（无参数）
+    for (let g = 0; g < 5; g++) groups.push(genFullRandom(cfg));
+  }
+
   let html = '';
-
-  // 一次生成5组
-  for (let group = 0; group < 5; group++) {
+  groups.forEach(grp => {
     html += `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;gap:6px;flex-wrap:wrap;align-items:center;">`;
-
     if (cfg.type === 'redblue') {
-      const redPool = Array.from({length: cfg.redMax}, (_, i) => i + 1);
-      const reds = shuffle(redPool).slice(0, cfg.redPick).sort((a,b) => a-b);
-      reds.forEach(n => {
+      grp.forEach(n => {
         html += `<span class="ball red" style="width:24px;height:24px;font-size:11px;">${String(n).padStart(2,'0')}</span>`;
       });
       html += `<span style="color:#888;margin:0 4px;">+</span>`;
@@ -1259,32 +1397,96 @@ function generateNumber(key, mechIdx, cardEl) {
         });
       }
     } else if (cfg.type === 'single') {
-      const pool = Array.from({length: cfg.redMax}, (_, i) => i + 1);
-      const nums = shuffle(pool).slice(0, cfg.redPick).sort((a,b) => a-b);
-      nums.forEach(n => {
+      grp.forEach(n => {
         html += `<span class="ball green" style="width:24px;height:24px;font-size:11px;">${String(n).padStart(2,'0')}</span>`;
       });
-    } else if (cfg.type === 'digit3' || cfg.type === 'digit5') {
-      const len = cfg.type === 'digit3' ? 3 : 5;
-      for (let i = 0; i < len; i++) {
-        const n = Math.floor(Math.random() * 10);
-        html += `<span class="ball orange" style="width:24px;height:24px;font-size:11px;">${n}</span>`;
-      }
     } else if (cfg.type === 'digit7') {
-      for (let i = 0; i < 6; i++) {
-        const n = Math.floor(Math.random() * 10);
+      grp.forEach(n => {
         html += `<span class="ball orange" style="width:24px;height:24px;font-size:11px;">${n}</span>`;
-      }
+      });
       const last = Math.floor(Math.random() * 15);
       html += `<span class="ball blue" style="width:24px;height:24px;font-size:11px;">${String(last).padStart(2,'0')}</span>`;
+    } else {
+      grp.forEach(n => {
+        html += `<span class="ball orange" style="width:24px;height:24px;font-size:11px;">${n}</span>`;
+      });
     }
-
     html += `</div>`;
-  }
+  });
 
-  // 保留头部的标题栏，下面换成数字
+  // 保留头部标题栏（含参数输入框），下方换成生成的号码或错误提示
   const headerHtml = cardEl.querySelector('.mech-header').outerHTML;
-  cardEl.innerHTML = headerHtml + `<div style="margin-top:12px;">${html}</div>`;
+  cardEl.innerHTML = headerHtml + (errMsg
+    ? `<div class="mech-err">${errMsg}</div>`
+    : `<div style="margin-top:12px;">${html}</div>`);
+  // 写回用户手动修改的参数值（避免重建后被重置为默认值）
+  const newInputs = cardEl.querySelectorAll('.mech-params input');
+  vals.forEach((v, i) => { if (newInputs[i]) newInputs[i].value = v; });
+}
+
+// ===== 机制生成辅助函数 =====
+function splitZones(cfg) {
+  // 号码区三等分：低/中/高（redblue/single 从1开始，digit 从0开始）
+  const from1 = (cfg.type === 'redblue' || cfg.type === 'single');
+  const max = from1 ? cfg.redMax : 9;
+  const base = from1 ? 1 : 0;
+  const a = Math.ceil(max / 3), b = Math.ceil((max - a) / 2);
+  return [rangeFromTo(base, base + a - 1), rangeFromTo(base + a, base + a + b - 1), rangeFromTo(base + a + b, max)];
+}
+function pickN(arr, count) {
+  if (count > arr.length) return [];
+  const a = shuffle([...arr]);
+  return a.slice(0, count);
+}
+function splitOddEven(cfg) {
+  const nums = (cfg.type === 'redblue' || cfg.type === 'single') ? rangeFromTo(1, cfg.redMax) : rangeFromTo(0, 9);
+  return [nums.filter(n => n % 2 === 1), nums.filter(n => n % 2 === 0)];
+}
+function minNum(cfg) { return (cfg.type === 'redblue' || cfg.type === 'single') ? 1 : 0; }
+function maxNum(cfg) { return (cfg.type === 'redblue' || cfg.type === 'single') ? cfg.redMax : 9; }
+function genInSum(cfg, count, lo, hi, tries) {
+  if (cfg.type === 'redblue' || cfg.type === 'single') {
+    const pool = rangeFromTo(1, cfg.redMax);
+    for (let t = 0; t < tries; t++) {
+      const nums = pickN(pool, count);
+      const s = nums.reduce((a, b) => a + b, 0);
+      if (s >= lo && s <= hi) return nums.sort((a, b) => a - b);
+    }
+  } else {
+    for (let t = 0; t < tries; t++) {
+      const nums = [];
+      for (let i = 0; i < count; i++) nums.push(Math.floor(Math.random() * 10));
+      const s = nums.reduce((a, b) => a + b, 0);
+      if (s >= lo && s <= hi) return nums;
+    }
+  }
+  return null;
+}
+function genFullRandom(cfg) {
+  if (cfg.type === 'redblue') {
+    const redPool = Array.from({length: cfg.redMax}, (_, i) => i + 1);
+    return shuffle(redPool).slice(0, cfg.redPick).sort((a,b) => a-b);
+  }
+  if (cfg.type === 'single') {
+    const pool = Array.from({length: cfg.redMax}, (_, i) => i + 1);
+    return shuffle(pool).slice(0, cfg.redPick).sort((a,b) => a-b);
+  }
+  const len = cfg.type === 'digit7' ? 6 : (cfg.type === 'digit3' ? 3 : 5);
+  const nums = [];
+  for (let i = 0; i < len; i++) nums.push(Math.floor(Math.random() * 10));
+  return nums;
+}
+
+// ===== 机制说明弹窗 =====
+function showMechDesc(idx, ev) {
+  if (ev) ev.stopPropagation();
+  const m = MECHANISMS[idx];
+  document.getElementById('mechDescTitle').textContent = m.name + ' 机制说明';
+  document.getElementById('mechDescText').textContent = m.desc || '该机制暂无说明';
+  document.getElementById('mechDescOverlay').style.display = 'flex';
+}
+function closeMechDesc() {
+  document.getElementById('mechDescOverlay').style.display = 'none';
 }
 
 renderHome();
